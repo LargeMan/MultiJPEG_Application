@@ -1,5 +1,11 @@
-﻿using System;
+﻿using MjpegProcessor;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Renci.SshNet;
+using SshNet;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 //using System.Drawing;
 using System.Drawing.Imaging;
@@ -17,21 +23,15 @@ using System.Windows.Data;
 using System.Windows.Documents;
 //using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using MjpegProcessor;
-using Renci.SshNet;
-using SshNet;
+using Microsoft.VisualBasic;
 using System.Security;
 using System.Security.Cryptography;
-using Microsoft.VisualBasic;
-using System.ComponentModel;
 using System.Xml;
-using System.Windows.Markup;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace desktopapp
 {
@@ -109,22 +109,6 @@ namespace desktopapp
             }
             */
 
-            
-            if (File.Exists("config.json"))
-            {
-                using (StreamReader r = new StreamReader("config.json"))
-                {
-                    json = r.ReadToEnd();
-                    module = JsonConvert.DeserializeObject<Module>(json);
-                }
-
-                
-            }
-            else
-            {
-                module = new Module();
-                // TODO: Implement some window that will create a module
-            }
 
 
 
@@ -154,8 +138,29 @@ namespace desktopapp
                 Debug.WriteLine("ERROR RESTART");
             }
 
+
+            if (File.Exists("config.json"))
+            {
+                using (StreamReader r = new StreamReader("config.json"))
+                {
+                    json = r.ReadToEnd();
+                    module = JsonConvert.DeserializeObject<Module>(json);
+                }
+
+                foreach (Datum m in module.data) InitializeModule(m);
+
+            }
+            else // create json and fill global variables
+            {
+                module = new Module();
+                json = "{\"data\" : [],\"group\" : [ \"Default\"]}";
+                File.WriteAllText("config.json", json);
+                //CreateCam(this, null);
+                // TODO: Implement some window that will create a module
+            }
+
             // Initialize Modules
-            foreach (Datum m in module.data) InitializeModule(m);
+            
 
 
             module = null; // deallocate it (probably better to change scope of var, but might need it later so idk)
@@ -350,7 +355,7 @@ namespace desktopapp
 
  
 
-        // Second field is so that the stream connected from a popup is used
+        // Second field is so that the stream connected from a popup is reused
         private void InitializeModule(Datum m, SshClient client=null)
         {
             // TODO: Replace debug writeline with proper error message
