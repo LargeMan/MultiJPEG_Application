@@ -115,7 +115,10 @@ namespace desktopapp
             // IP STUFF
 
             ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            myIP = ipHostInfo.AddressList.Last();
+            //myIP = ipHostInfo.AddressList.Last();
+            myIP = Array.FindLast(
+                    Dns.GetHostEntry(string.Empty).AddressList,
+                    a => a.AddressFamily == AddressFamily.InterNetwork);
             myIPString = myIP.ToString();
             localEndPoint = new IPEndPoint(myIP, 11111);
             socket = new Socket(myIP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -225,6 +228,7 @@ namespace desktopapp
                         if (data == "ALARM"+TERMINATOR || data == "WARNING"+TERMINATOR) 
                         {
                             Debug.WriteLine("Made it past message check...");
+                            Debug.WriteLine(data);
 
                             // Change the corresponding status bar
                             this.Dispatcher.Invoke(() =>
@@ -276,7 +280,7 @@ namespace desktopapp
                         }
                     }
                     handler.Shutdown(SocketShutdown.Both);
-                    handler.Close();
+                    //handler.Close();
                 }
             }
             catch (Exception e)
@@ -484,7 +488,7 @@ namespace desktopapp
                 //client.RunCommand("mjpg_streamer -i \"input_raspicam.so - x 1280 - y 720 - fps 30\" -o output_http.so");
 
                 // Start script in background
-                var cmd = client.CreateCommand("./startcam.sh");
+                var cmd = client.CreateCommand("bash startcam.sh");
                 cmd.BeginExecute();
 
 
