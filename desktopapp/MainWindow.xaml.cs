@@ -125,12 +125,7 @@ namespace desktopapp
             // IP STUFF
 
             ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            //myIP = ipHostInfo.AddressList.Last();
-
-            myIP = Array.FindLast(
-                    Dns.GetHostEntry(string.Empty).AddressList,
-                    a => a.AddressFamily == AddressFamily.InterNetwork);
-
+            
             myIPString = myIP.ToString();
 
             Debug.WriteLine("ip is " + myIPString);
@@ -274,6 +269,7 @@ namespace desktopapp
                         if (data == "ALARM" + TERMINATOR || data == "WARNING" + TERMINATOR)
                         {
                             Debug.WriteLine("Made it past message check...");
+                            Debug.WriteLine(data);
 
                             // Change the corresponding status bar
                             this.Dispatcher.Invoke(() =>
