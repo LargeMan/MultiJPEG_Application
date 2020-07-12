@@ -1,0 +1,70 @@
+﻿<Window x:Class="desktopapp.ScanPopUp"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:desktopapp"
+        mc:Ignorable="d"
+        Title="ScanPopUp" Height="450" Width="800">
+    <ScrollViewer>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="5" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock x:Name="errorMsg"
+                       TextWrapping="Wrap"
+                       Grid.Row="1"
+                       Grid.Column="0"
+                       Grid.ColumnSpan="10"
+                       Foreground="Blue"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="5"
+                       >
+                    <Bold> WARNING: ONLY FILL IN LAST FIELD IF RUNNING CAMERAS ON DIFFERENT NETWORK <LineBreak/>
+                           NOTE: This may take some time to finish running
+                    </Bold>
+            </TextBlock>
+
+            <DockPanel Grid.ColumnSpan="10" Grid.Row="2">
+                <TextBlock TextWrapping="Wrap" DockPanel.Dock="Left" Margin="30">
+                    Lower range (default=0)
+                </TextBlock>
+                <TextBox x:Name="lowerInput" Margin="30"></TextBox>
+            </DockPanel>
+            <DockPanel Grid.ColumnSpan="10" Grid.Row="3">
+                <TextBlock TextWrapping="Wrap" DockPanel.Dock="Left" Margin="30">
+                    Upper range (default=255)
+                </TextBlock>
+                <TextBox x:Name="upperInput" Margin="30"></TextBox>
+            </DockPanel>
+            <DockPanel Grid.ColumnSpan="10" Grid.Row="4">
+                <TextBlock TextWrapping="Wrap" DockPanel.Dock="Left" Margin="30">
+                    IP Address (default=this ip):
+                </TextBlock>
+                <TextBox x:Name="ipInput" Margin="30"></TextBox>
+            </DockPanel>
+            <Button x:Name="startGroup" Content="Start"
+                    Grid.Row="5" Grid.Column="1"
+                    Margin="10,10,0,10" Width="100"
+                    Click="SubmitGroup"/>
+            <Button x:Name="cancelGroup" Content="Cancel"
+                    Grid.Row="5" Grid.Column="3"
+                    Margin="10" Width="100"
+                    Click="CancelGroup"/>
+
+        </Grid>
+    </ScrollViewer>
+</Window>

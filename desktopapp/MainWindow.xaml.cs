@@ -51,7 +51,11 @@ namespace desktopapp
         public IList<string> group { get; set; }
     }
 
-
+    public class MJPGMaps
+    {
+        public Image img;
+        public string ip;
+    }
 
 
     /// <summary>
@@ -75,7 +79,10 @@ namespace desktopapp
 
         public Socket socket;
         public List<Socket> clients = new List<Socket>();
-        private List<MjpegDecoder> mjpegs = new List<MjpegDecoder>();
+        private Dictionary<MjpegDecoder, MJPGMaps> mjpegs = new Dictionary<MjpegDecoder, MJPGMaps>();
+        
+
+
 
         //public const int PORT = 11111;
         public const int BUFFERSIZE = 1024;
@@ -93,6 +100,9 @@ namespace desktopapp
             // TODO: Add way to change these after the fact
             username = popup.userName;
             password = popup.passWord;
+
+            // TESTING ONLY
+            socketMap.Add("192.168.1.137", StatusIndicator);
 
             /*
             Current plan:
@@ -115,8 +125,15 @@ namespace desktopapp
             // IP STUFF
 
             ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            myIP = ipHostInfo.AddressList.Last();
+            //myIP = ipHostInfo.AddressList.Last();
+
+            myIP = Array.FindLast(
+                    Dns.GetHostEntry(string.Empty).AddressList,
+                    a => a.AddressFamily == AddressFamily.InterNetwork);
+
             myIPString = myIP.ToString();
+
+            Debug.WriteLine("ip is " + myIPString);
             localEndPoint = new IPEndPoint(myIP, 11111);
             socket = new Socket(myIP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
@@ -168,6 +185,16 @@ namespace desktopapp
 
 
 
+        //private void TestAlarm()
+        //{
+
+        //}
+
+
+
+
+
+        
         // This runs in a background thread and only accepts one incoming message at a time
         // Since the pi's should rarely be sending messages the queue should never be overwhelmed
         // In theory, this is very vulnerable to attack, but the network should be private anyways
@@ -175,16 +202,38 @@ namespace desktopapp
         {
             try
             {
+
+                while (true)
+                {
+
+                    Debug.WriteLine("Waiting for a connection..." + myIPString);
+                    Socket handler = socket.Accept();
+                    Thread thread = new Thread(() => ConnectedSocket(handler));
+                    thread.IsBackground = true;
+                    thread.Start();
+                }
+
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("wtf");
+                Debug.WriteLine(e);
+            }
+
+            // TODO: ADD ERROR SUPPRESSION SYSTEM
+        } 
+
+        private void ConnectedSocket(Socket handler)
+        {
+            try
+            {
+                string TERMINATOR = "<EOF>"; // <----------------- CHANGE THIS TO WHATEVER YOU WANT FOR THE PI SCRIPT MESSAGE ENDING
+
                 while (true)
                 {
                     // Buffer stuff
                     string data = null;
-                    string TERMINATOR = "<EOF>"; // <----------------- CHANGE THIS TO WHATEVER YOU WANT FOR THE PI SCRIPT MESSAGE ENDING
                     byte[] bytes = new byte[1024];
-
-                    Debug.WriteLine("Waiting for a connection..." + myIPString);
-                    Socket handler = socket.Accept();
-                    data = null;
 
                     // Read bytes of message
                     while (true)
@@ -220,9 +269,9 @@ namespace desktopapp
                     if (socketMap.ContainsKey(clientIP))
                     {
                         Debug.WriteLine("Made it past hashmap check...");
-
+                        Debug.WriteLine(data);
                         // Checks if message is ALARM<EOF> or WARNING<EOF> (NOTE: NO SPACE BETWEEN TERMINATOR AND MESSAGE)
-                        if (data == "ALARM"+TERMINATOR || data == "WARNING"+TERMINATOR) 
+                        if (data == "ALARM" + TERMINATOR || data == "WARNING" + TERMINATOR)
                         {
                             Debug.WriteLine("Made it past message check...");
 
@@ -251,10 +300,10 @@ namespace desktopapp
                                     // Absolute cancer, but I don't know a nicer way of doing this
                                     // HEIRARCHY: textblock <- stackpanel <- groupbox <- wrappanel <- groupbox <- expander
                                     StackPanel A = (StackPanel)textref.Parent;
-                                    GroupBox   B = (GroupBox)  A.Parent;
-                                    WrapPanel  C = (WrapPanel) B.Parent;
-                                    GroupBox   D = (GroupBox)  C.Parent;
-                                    Expander   E = (Expander)  D.Parent;
+                                    GroupBox B = (GroupBox)A.Parent;
+                                    WrapPanel C = (WrapPanel)B.Parent;
+                                    GroupBox D = (GroupBox)C.Parent;
+                                    Expander E = (Expander)D.Parent;
 
                                     E.IsExpanded = true;
                                 }
@@ -275,17 +324,17 @@ namespace desktopapp
                             });
                         }
                     }
-                    handler.Shutdown(SocketShutdown.Both);
-                    handler.Close();
+                    //handler.Shutdown(SocketShutdown.Both);
+                    //handler.Close();
                 }
             }
             catch (Exception e)
             {
+                Debug.WriteLine("wtf");
                 Debug.WriteLine(e);
             }
-
-            // TODO: ADD ERROR SUPPRESSION SYSTEM
         }
+
 
         // Creates groups. Groups are more or less useless for now
         // TODO: Make groups not useless
@@ -453,9 +502,11 @@ namespace desktopapp
             // Create new stream thread
             var mjpeg = new MjpegDecoder();
             mjpeg.ParseStream(new Uri(stream));
-            mjpegs.Add(mjpeg);
+
             // Repeated code is bad, but I couldnt figure out a way to store the lambda as a method or a variable
             // Essentially sets the image component to update every frame
+
+
             mjpeg.FrameReady += (o, ev) =>
             {
                 Dispatcher.BeginInvoke(new ThreadStart(delegate
@@ -463,6 +514,17 @@ namespace desktopapp
                     imgtest.Source = ev.BitmapImage;
                 }));
             };
+
+            MJPGMaps grp = new MJPGMaps
+            {
+                img = imgtest,
+                ip = stream
+            };
+
+            mjpegs.Add(mjpeg, grp);
+            mjpeg.Error += _mjpg_Error;
+
+
 
             // Ensure there are no duplicate python script instances running (MIGHT BE UNNECESSARY/BAD)
             client.RunCommand("sudo killall python3");
@@ -484,7 +546,7 @@ namespace desktopapp
                 //client.RunCommand("mjpg_streamer -i \"input_raspicam.so - x 1280 - y 720 - fps 30\" -o output_http.so");
 
                 // Start script in background
-                var cmd = client.CreateCommand("./startcam.sh");
+                var cmd = client.CreateCommand("bash startcam.sh");
                 cmd.BeginExecute();
 
 
@@ -496,8 +558,9 @@ namespace desktopapp
                     Dispatcher.BeginInvoke(new ThreadStart(delegate
                     {
                         imgtest.Source = ev.BitmapImage;
-                    }));
+                    }));   
                 };
+                mjpeg.Error += _mjpg_Error;
 
                 //client.RunCommand("sudo killall mjpg_streamer");
                 //client.RunCommand("./startcam.sh");
@@ -515,6 +578,54 @@ namespace desktopapp
                 Debug.WriteLine("Cant add same key twice");
             }
         }
+
+
+
+
+        private void _mjpg_Error(object sender, MjpegProcessor.ErrorEventArgs e)
+        {
+            Debug.WriteLine(e.Message);
+
+            // RESET THE STREAM
+            try
+            {
+                MJPGMaps grp = mjpegs[(MjpegDecoder)sender];
+
+                // restart stream
+                ((MjpegDecoder)sender).ParseStream(new Uri(grp.ip));
+
+                /*
+                ((MjpegDecoder)sender).FrameReady += (o, ev) =>
+                {
+                    Dispatcher.BeginInvoke(new ThreadStart(delegate
+                    {
+                        grp.img.Source = ev.BitmapImage;
+                    }));
+                };
+                
+                ((MjpegDecoder)sender).Error += _mjpg_Error;
+                */
+
+            }
+            catch (Exception ev)
+            {
+                Debug.WriteLine(ev.Message);
+            }
+        }
+
+
+
+        // Attempt at scanning the network range for automatically adding raspberry pi units
+        // Basically a QOL feature
+        private void ScanIP(object sender, RoutedEventArgs e)
+        {
+            int index = myIPString.LastIndexOf(".");
+            string iprange = myIPString.Substring(0, index);
+
+
+        }
+
+
 
 
         // AForge nonsense, might try to use it later for saving memory
