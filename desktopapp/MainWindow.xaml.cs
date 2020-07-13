@@ -125,7 +125,12 @@ namespace desktopapp
             // IP STUFF
 
             ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            
+
+            myIP = Array.FindLast(
+                    Dns.GetHostEntry(string.Empty).AddressList,
+                    a => a.AddressFamily == AddressFamily.InterNetwork);
+
+
             myIPString = myIP.ToString();
 
             Debug.WriteLine("ip is " + myIPString);
