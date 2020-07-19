@@ -55,8 +55,14 @@ namespace desktopapp
     {
         public Image img;
         public string ip;
+        public Socket testSck;
     }
 
+    public class SocketStuff
+    {
+        public TextBlock txt;
+        public bool enabled;
+    }
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -64,7 +70,7 @@ namespace desktopapp
     public partial class MainWindow : Window
     {
         // TODO: Change scope of some of these vars, most of it is unnecessary as global vars
-        public static Dictionary<string, TextBlock> socketMap = new Dictionary<string, TextBlock>();
+        public static Dictionary<string, SocketStuff> socketMap = new Dictionary<string, SocketStuff>();
         public Module module;
         public List<Datum> failedConn = new List<Datum>();
         public string json;
@@ -102,7 +108,7 @@ namespace desktopapp
             password = popup.passWord;
 
             // TESTING ONLY
-            socketMap.Add("192.168.1.137", StatusIndicator);
+            //socketMap.Add("192.168.1.137", StatusIndicator);
 
             /*
             Current plan:
@@ -266,7 +272,7 @@ namespace desktopapp
                     Debug.WriteLine(clientIP);
 
                     // Check for error and if IP is valid
-                    if (socketMap.ContainsKey(clientIP))
+                    if (socketMap.ContainsKey(clientIP) && socketMap[clientIP].enabled)
                     {
                         Debug.WriteLine("Made it past hashmap check...");
                         Debug.WriteLine(data);
@@ -285,13 +291,13 @@ namespace desktopapp
 
                                 if (data == "ALARM" + TERMINATOR)
                                 {
-                                    textref.Text = "ALARM: CHECK PATIENT IMMEDIATELY";
-                                    textref.Background = Brushes.Red;
+                                    textref.txt.Text = "ALARM: CHECK PATIENT IMMEDIATELY";
+                                    textref.txt.Background = Brushes.Red;
                                 }
                                 else
                                 {
-                                    textref.Text = "WARNING: Movement detected";
-                                    textref.Background = Brushes.Orange;
+                                    textref.txt.Text = "WARNING: Movement detected";
+                                    textref.txt.Background = Brushes.Orange;
                                 }
 
 
@@ -300,7 +306,7 @@ namespace desktopapp
                                 {
                                     // Absolute cancer, but I don't know a nicer way of doing this
                                     // HEIRARCHY: textblock <- stackpanel <- groupbox <- wrappanel <- groupbox <- expander
-                                    StackPanel A = (StackPanel)textref.Parent;
+                                    StackPanel A = (StackPanel)textref.txt.Parent;
                                     GroupBox B = (GroupBox)A.Parent;
                                     WrapPanel C = (WrapPanel)B.Parent;
                                     GroupBox D = (GroupBox)C.Parent;
@@ -320,8 +326,8 @@ namespace desktopapp
                             this.Dispatcher.Invoke(() =>
                             {
                                 var textref = socketMap[clientIP];
-                                textref.Text = "Status: Normal";
-                                textref.Background = Brushes.ForestGreen;
+                                textref.txt.Text = "Status: Normal";
+                                textref.txt.Background = Brushes.ForestGreen;
                             });
                         }
                     }
@@ -441,6 +447,9 @@ namespace desktopapp
 
             // WPF visual stuff
             SolidColorBrush darkGray = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF333333"));
+            SolidColorBrush bordGray = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF000000"));
+            SolidColorBrush foreGray = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFEEEEEE"));
+
             GroupBox newGroup = new GroupBox
             {
                 BorderThickness = new Thickness(0.1),
@@ -451,14 +460,27 @@ namespace desktopapp
             StackPanel newStack = new StackPanel();
             newGroup.Content = newStack;
 
+            Border border = new Border
+            {
+                BorderBrush = bordGray,
+                BorderThickness = new Thickness(0.1),
+                CornerRadius = new CornerRadius(8),
+                Margin = new Thickness(3),
+                Background = darkGray
+            };
+
             TextBlock roomNum = new TextBlock
             {
                 FontSize = 14,
                 Text = m.num,
                 Margin = new Thickness(5),
                 Background = darkGray,
-                TextAlignment = TextAlignment.Center
+                TextAlignment = TextAlignment.Center,
+                Foreground = foreGray,
+                FontWeight = FontWeights.Bold
             };
+
+
             Image imgtest = new Image
             {
                 MaxWidth = 288,
@@ -486,12 +508,20 @@ namespace desktopapp
                 Background = Brushes.DarkGray,
                 Foreground = Brushes.White,
             };
+            Button disableBtn = new Button
+            {
+                Content = "Disable Alarms",
+                Background = Brushes.DarkGray,
+                Foreground = Brushes.White,
+            };
 
-            newStack.Children.Add(roomNum);
+            border.Child = roomNum;
+            newStack.Children.Add(border);
             newStack.Children.Add(imgtest);
             newStack.Children.Add(personName);
             newStack.Children.Add(status);
             newStack.Children.Add(testBtn);
+            newStack.Children.Add(disableBtn);
 
             // TODO: CHANGE THIS LATER WHEN DEALING WITH GROUPS
             // m.group blah blah
@@ -567,11 +597,41 @@ namespace desktopapp
                 //client.RunCommand("./startcam.sh");
             };
 
+            SocketStuff sck = new SocketStuff
+            {
+                txt = status,
+                enabled = true
+            };
+
+            disableBtn.Click += (o, ev) =>
+            {
+                lock (sck)
+                {
+                    sck.enabled = !sck.enabled;
+
+                    if (sck.enabled)
+                    {
+                        sck.txt.Text = "Status: Normal";
+                        sck.txt.Background = Brushes.ForestGreen;
+                        disableBtn.Content = "Disable Alarms";
+                    }
+                    else
+                    {
+                        sck.txt.Text = "ALARMS DISABLED";
+                        sck.txt.Background = Brushes.Blue;
+                        disableBtn.Content = "Enable Alarms";
+                    }
+                }
+            };
+
+
+
             // Now to add the target IP address to the map
             //Debug.WriteLine(popup.ipAddr);
             try
             {
-                socketMap.Add(m.ip, status);
+
+                socketMap.Add(m.ip, sck);
             }
             catch (Exception e)
             {
@@ -591,7 +651,7 @@ namespace desktopapp
             try
             {
                 MJPGMaps grp = mjpegs[(MjpegDecoder)sender];
-
+                ((MjpegDecoder)sender).StopStream();
                 // restart stream
                 ((MjpegDecoder)sender).ParseStream(new Uri(grp.ip));
 
@@ -674,11 +734,15 @@ namespace desktopapp
             return clonedElement;
         } */
 
-
+        private void WindowClose(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
 
         // save default group
         private void WindowClosing(object sender, CancelEventArgs e)
         {
+           
             //base.OnClosing(e);
 
             //string xaml = System.Windows.Markup.XamlWriter.Save(this.Content);

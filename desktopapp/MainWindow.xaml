@@ -118,7 +118,7 @@
                     <MenuItem Header="_Open" Background="#FF222222"/>
                     <MenuItem Header="_Save" Background="#FF222222"/>
                     <Separator Background="#FF222222"/>
-                    <MenuItem Header="_Exit" Background="#FF222222"/>
+                    <MenuItem Header="_Exit" Background="#FF222222" Click="WindowClose"/>
                 </MenuItem>
                 <MenuItem Header="_Tools">
                     <MenuItem Header="_Add New Group" Background="#FF222222"
