@@ -103,6 +103,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -150,46 +151,7 @@
                               
                               BorderThickness="0.1">
                         <WrapPanel x:Name="Default">
-                            <GroupBox BorderThickness="0.1" Foreground="#FFEEEEEE">
-                                <StackPanel>
-                                    <Border BorderBrush="#FF000000"
-                                            BorderThickness="0.1"
-                                            CornerRadius="8"
-                                            Margin="3"
-                                            Background="#FF333333">
 
-                                        <TextBlock x:Name="roomnum"
-                                                   FontSize="14"
-                                                   Text="TESTING MODULE IGNORE"
-                                                   Margin="5"
-                                                   Background="#FF333333"
-                                                   TextAlignment="Center"
-                                                   Foreground="#FFEEEEEE"
-                                                   FontWeight="Bold"/>
-                                    </Border>
-                                    
-                                    <Image MaxWidth="288"
-                                           MinWidth="288"
-                                           x:Name="frameHolder"
-                                           />
-                                    <TextBlock x:Name="_src0"
-                                               FontSize="14"
-                                               Text="Name: Test Subject"
-                                               Background="Gray"
-                                               TextAlignment="Center"
-                                               FontWeight="Bold"
-                                               Margin="1"
-                                               />
-                                    <TextBlock x:Name="StatusIndicator"
-                                               FontSize="14"
-                                               Text="Status: Normal"
-                                               Background="ForestGreen" 
-                                               TextAlignment="Center"
-                                               FontWeight="Bold"
-                                               Margin="1"
-                                               />
-                                </StackPanel>
-                            </GroupBox>
                         </WrapPanel>
                     </GroupBox>
                 </Expander>

@@ -55,13 +55,13 @@ namespace desktopapp
     {
         public Image img;
         public string ip;
-        public Socket testSck;
     }
 
     public class SocketStuff
     {
         public TextBlock txt;
         public bool enabled;
+        public Socket testSck;
     }
 
     /// <summary>
@@ -86,7 +86,7 @@ namespace desktopapp
         public Socket socket;
         public List<Socket> clients = new List<Socket>();
         private Dictionary<MjpegDecoder, MJPGMaps> mjpegs = new Dictionary<MjpegDecoder, MJPGMaps>();
-        
+
 
 
 
@@ -258,7 +258,7 @@ namespace desktopapp
 
                     byte[] msg = Encoding.ASCII.GetBytes(data);
 
-                    handler.Send(msg);
+                    //handler.Send(msg);
 
                     // Parse IP and remove port number
                     string clientIP = handler.RemoteEndPoint.ToString();
@@ -272,8 +272,15 @@ namespace desktopapp
                     Debug.WriteLine(clientIP);
 
                     // Check for error and if IP is valid
-                    if (socketMap.ContainsKey(clientIP) && socketMap[clientIP].enabled)
+                    if (socketMap.ContainsKey(clientIP))
                     {
+                        if (socketMap[clientIP].testSck == null)
+                        {
+                            socketMap[clientIP].testSck = handler;
+                        }
+
+                        if (!socketMap[clientIP].enabled) continue;
+
                         Debug.WriteLine("Made it past hashmap check...");
                         Debug.WriteLine(data);
                         // Checks if message is ALARM<EOF> or WARNING<EOF> (NOTE: NO SPACE BETWEEN TERMINATOR AND MESSAGE)
@@ -469,6 +476,22 @@ namespace desktopapp
                 Background = darkGray
             };
 
+            // Grid nonsense
+            Grid minigrid = new Grid();
+            ColumnDefinition c1 = new ColumnDefinition();
+            c1.Width = new GridLength(1, GridUnitType.Star);
+            ColumnDefinition c2 = new ColumnDefinition();
+            c2.Width = GridLength.Auto;
+            minigrid.ColumnDefinitions.Add(c1);
+            minigrid.ColumnDefinitions.Add(c2);
+
+            Button options = new Button
+            {
+                FontSize = 14,
+                Content = " + "
+            };
+
+
             TextBlock roomNum = new TextBlock
             {
                 FontSize = 14,
@@ -478,6 +501,19 @@ namespace desktopapp
                 TextAlignment = TextAlignment.Center,
                 Foreground = foreGray,
                 FontWeight = FontWeights.Bold
+            };
+
+            minigrid.Children.Add(roomNum);
+            minigrid.Children.Add(options);
+            roomNum.SetValue(Grid.ColumnProperty, 0);
+            options.SetValue(Grid.ColumnProperty, 1);
+
+
+            // TODO: Exapand menu for extra options
+            Menu menu = new Menu();
+            MenuItem optionz = new MenuItem
+            {
+                Header = " + "
             };
 
 
@@ -515,7 +551,7 @@ namespace desktopapp
                 Foreground = Brushes.White,
             };
 
-            border.Child = roomNum;
+            border.Child = minigrid;
             newStack.Children.Add(border);
             newStack.Children.Add(imgtest);
             newStack.Children.Add(personName);
@@ -605,6 +641,8 @@ namespace desktopapp
 
             disableBtn.Click += (o, ev) =>
             {
+                byte[] msg;
+
                 lock (sck)
                 {
                     sck.enabled = !sck.enabled;
@@ -614,13 +652,32 @@ namespace desktopapp
                         sck.txt.Text = "Status: Normal";
                         sck.txt.Background = Brushes.ForestGreen;
                         disableBtn.Content = "Disable Alarms";
+                        if (sck.testSck != null)
+                        {
+                            msg = Encoding.ASCII.GetBytes("ENABLE<EOF>");
+                            sck.testSck.Send(msg);
+                        }
+                        else
+                        {
+                            Debug.WriteLine("Socket doesn't exist yet...");
+                        }
                     }
                     else
                     {
                         sck.txt.Text = "ALARMS DISABLED";
                         sck.txt.Background = Brushes.Blue;
                         disableBtn.Content = "Enable Alarms";
+                        if (sck.testSck != null)
+                        {
+                            msg = Encoding.ASCII.GetBytes("DISABLE<EOF>");
+                            sck.testSck.Send(msg);
+                        }
+                        else
+                        {
+                            Debug.WriteLine("Socket doesn't exist yet...");
+                        }
                     }
+
                 }
             };
 
@@ -638,6 +695,13 @@ namespace desktopapp
                 // this should never be a problem as the check happens fairly early
                 Debug.WriteLine("Cant add same key twice");
             }
+
+
+
+            // Settings button implementation
+
+
+
         }
 
 
