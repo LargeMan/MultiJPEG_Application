@@ -33,6 +33,7 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Xml;
 using System.Reflection;
+using System.Windows.Automation;
 
 namespace desktopapp
 {
@@ -309,7 +310,12 @@ namespace desktopapp
                                     message.Content += " " + DateTime.Now.ToString("t");
                                     message.Content += (" ALARM AT:  ");
                                     // BEHOLD CRINGE
-                                    message.Content += ((StackPanel)textref.txt.Parent)
+
+                                    Grid temp = ((Grid)((StackPanel)textref.txt.Parent)
+                                                            .Children.OfType<Border>()
+                                                            .FirstOrDefault()
+                                                            .Child);
+                                    message.Content +=  temp
                                                             .Children.OfType<TextBlock>()
                                                             .FirstOrDefault()
                                                             .Text;
@@ -324,10 +330,15 @@ namespace desktopapp
                                     message.Content += " " + DateTime.Now.ToString("t");
                                     message.Content += (" WARNING AT:  ");
                                     // BEHOLD CRINGE
-                                    message.Content += ((StackPanel)textref.txt.Parent)
+                                    Grid temp = ((Grid)((StackPanel)textref.txt.Parent)
+                                                            .Children.OfType<Border>()
+                                                            .FirstOrDefault()
+                                                            .Child);
+                                    message.Content += temp
                                                             .Children.OfType<TextBlock>()
                                                             .FirstOrDefault()
                                                             .Text;
+
                                     message.Background = Brushes.Orange;
                                     messagelog.Children.Add(message);
                                 }
@@ -862,15 +873,33 @@ namespace desktopapp
 
             };
 
+            StackPanel editRoomPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            TextBox editRoomText = new TextBox { Width = 100 };
+            Button editRoomBtn = new Button { Content = "Submit" };
 
-            editRoom.Click += (o, v) =>
+            editRoomPanel.Children.Add(editRoomText);
+            editRoomPanel.Children.Add(editRoomBtn);
+            editRoom.Items.Add(editRoomPanel);
+
+            editRoomBtn.Click += (o, v) =>
             {
-
+                if (editRoomText.Text == "") return;
+                roomNum.Text = editRoomText.Text;
             };
 
-            editName.Click += (o, v) =>
-            {
 
+            StackPanel editNamePanel = new StackPanel { Orientation = Orientation.Horizontal };
+            TextBox editNameText = new TextBox { Width = 100 };
+            Button editNameBtn = new Button { Content = "Submit" };
+
+            editNamePanel.Children.Add(editNameText);
+            editNamePanel.Children.Add(editNameBtn);
+            editName.Items.Add(editNamePanel);
+
+            editNameBtn.Click += (o, v) =>
+            {
+                if (editNameText.Text == "") return;
+                personName.Text = editNameText.Text;
             };
 
         }
