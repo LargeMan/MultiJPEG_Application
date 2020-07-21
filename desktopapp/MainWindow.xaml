@@ -142,7 +142,6 @@
                           Foreground="#FFCCCCCC"
                           Background="#FF222222"
                           BorderBrush="#FF333333"
-                          DockPanel.Dock="Top"
                           x:Name="DefaultEXP">
                     <GroupBox Header="Default Group"
                               Margin="10"
@@ -158,7 +157,8 @@
 
             </StackPanel>
         </ScrollViewer>
-
-
+        <ScrollViewer Grid.Column="2" Grid.Row="1">
+            <StackPanel x:Name="messagelog"></StackPanel>
+        </ScrollViewer>
     </Grid>
 </Window>

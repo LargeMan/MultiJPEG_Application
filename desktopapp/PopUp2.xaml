@@ -5,8 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:desktopapp"
         mc:Ignorable="d"
-        Title="Window1" Height="356" Width="593">
-    <ScrollViewer>
+        Background="#FF222222"
+        Foreground="#FFCCCCCC"
+        Title="Create Module" Height="421" Width="593">
+    <ScrollViewer Margin="0,0,0,0">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -17,6 +19,7 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="5" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -37,7 +40,7 @@
             </TextBlock>
 
             <DockPanel Grid.ColumnSpan="10" Grid.Row="2">
-                <TextBlock TextWrapping="Wrap" DockPanel.Dock="Left" Margin="30">
+                <TextBlock TextWrapping="Wrap" DockPanel.Dock="Left" Margin="30" >
                     New Patient Name:
                 </TextBlock>
                 <TextBox x:Name="nameInput" Margin="30"></TextBox>
@@ -54,12 +57,24 @@
                 </TextBlock>
                 <TextBox x:Name="ipInput" Margin="30"></TextBox>
             </DockPanel>
+            
+            
+            <DockPanel Grid.ColumnSpan="10" Grid.Row="5">
+                <TextBlock TextWrapping="Wrap" DockPanel.Dock="Left" Margin="30">
+                    Group:
+                </TextBlock>
+                <ComboBox Margin="30" x:Name="grouplist">
+
+                </ComboBox>
+            </DockPanel>
+            
+            
             <Button x:Name="createGroup" Content="Create Group"
-                    Grid.Row="5" Grid.Column="1"
+                    Grid.Row="6" Grid.Column="1"
                     Margin="10,10,0,10" Width="100"
                     Click="SubmitGroup"/>
             <Button x:Name="cancelGroup" Content="Cancel"
-                    Grid.Row="5" Grid.Column="3"
+                    Grid.Row="6" Grid.Column="3"
                     Margin="10" Width="100"
                     Click="CancelGroup"/>
 

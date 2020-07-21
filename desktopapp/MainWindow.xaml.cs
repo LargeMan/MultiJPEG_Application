@@ -32,6 +32,7 @@ using Microsoft.VisualBasic;
 using System.Security;
 using System.Security.Cryptography;
 using System.Xml;
+using System.Reflection;
 
 namespace desktopapp
 {
@@ -71,7 +72,11 @@ namespace desktopapp
     {
         // TODO: Change scope of some of these vars, most of it is unnecessary as global vars
         public static Dictionary<string, SocketStuff> socketMap = new Dictionary<string, SocketStuff>();
-        public Module module;
+        private Dictionary<MjpegDecoder, MJPGMaps> mjpegs = new Dictionary<MjpegDecoder, MJPGMaps>();
+        private Dictionary<string, WrapPanel> groupMap = new Dictionary<string, WrapPanel>();
+
+
+        public static Module module;
         public List<Datum> failedConn = new List<Datum>();
         public string json;
 
@@ -84,8 +89,6 @@ namespace desktopapp
         public static string password;
 
         public Socket socket;
-        public List<Socket> clients = new List<Socket>();
-        private Dictionary<MjpegDecoder, MJPGMaps> mjpegs = new Dictionary<MjpegDecoder, MJPGMaps>();
 
 
 
@@ -170,8 +173,8 @@ namespace desktopapp
                     module = JsonConvert.DeserializeObject<Module>(json);
                 }
 
+                foreach (string m in module.group) InitializeGroup(m);
                 foreach (Datum m in module.data) InitializeModule(m);
-
             }
             else // create json and fill global variables
             {
@@ -186,7 +189,7 @@ namespace desktopapp
             
 
 
-            module = null; // deallocate it (probably better to change scope of var, but might need it later so idk)
+           // module = null; // deallocate it (probably better to change scope of var, but might need it later so idk)
         }
 
 
@@ -296,17 +299,43 @@ namespace desktopapp
                                 // Need to modify dictionary based on json format
                                 var textref = socketMap[clientIP];
 
+                                Button message = new Button();
+
                                 if (data == "ALARM" + TERMINATOR)
                                 {
                                     textref.txt.Text = "ALARM: CHECK PATIENT IMMEDIATELY";
                                     textref.txt.Background = Brushes.Red;
+                                    message.Content = DateTime.UtcNow.ToString("MM-dd-yyyy");
+                                    message.Content += " " + DateTime.Now.ToString("t");
+                                    message.Content += (" ALARM AT:  ");
+                                    // BEHOLD CRINGE
+                                    message.Content += ((StackPanel)textref.txt.Parent)
+                                                            .Children.OfType<TextBlock>()
+                                                            .FirstOrDefault()
+                                                            .Text;
+                                    message.Background = Brushes.Red;
+                                    messagelog.Children.Add(message);
                                 }
                                 else
                                 {
                                     textref.txt.Text = "WARNING: Movement detected";
                                     textref.txt.Background = Brushes.Orange;
+                                    message.Content = DateTime.UtcNow.ToString("MM-dd-yyyy");
+                                    message.Content += " " + DateTime.Now.ToString("t");
+                                    message.Content += (" WARNING AT:  ");
+                                    // BEHOLD CRINGE
+                                    message.Content += ((StackPanel)textref.txt.Parent)
+                                                            .Children.OfType<TextBlock>()
+                                                            .FirstOrDefault()
+                                                            .Text;
+                                    message.Background = Brushes.Orange;
+                                    messagelog.Children.Add(message);
                                 }
 
+                                message.Click += (o, ev) =>
+                                {
+                                    messagelog.Children.Remove(message);
+                                };
 
                                 // Expand the group for visibility
                                 try
@@ -363,15 +392,58 @@ namespace desktopapp
             string test = popup.TheValue;
 
             if (test == "NaN") return;
+            if (test.ToLower() == "default") return;
+
+
+            module.group.Add(test);
+            string testy = JsonConvert.SerializeObject(module, Newtonsoft.Json.Formatting.Indented);
+            Debug.WriteLine(testy);
+
+
+            File.WriteAllText("config.json", testy);
+
+
+            InitializeGroup(test);
+        }
+
+
+        private void InitializeGroup(string name)
+        {
+            // Prevent another default added
+            if (name.ToLower() == "default")
+            {
+                groupMap.Add("Default", Default);
+                return;
+            }
 
             Expander expander = new Expander
             {
-                Header = test
+                Header = name,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFCCCCCC")),
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF222222")),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF333333"))
             };
 
-            GroupWindow.Children.Add(expander);
+            GroupBox newGroup = new GroupBox
+            {
+                BorderThickness = new Thickness(0.1),
+                Foreground = Brushes.White,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(10),
+                Padding = new Thickness(10),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF444444"))
+            };
 
+            WrapPanel wrap = new WrapPanel();
+
+            groupMap.Add(name, wrap);
+
+            expander.Content = newGroup;
+            newGroup.Content = wrap;
+            GroupWindow.Children.Add(expander);
         }
+
+
 
 
         private void CreateCam(object sender, RoutedEventArgs e)
@@ -393,11 +465,11 @@ namespace desktopapp
                     name = popup.personName,
                     num = popup.roomNum,
                     ip = popup.ipAddr,
-                    group = "Default"
+                    group = popup.selectedGroup
                 };
 
                 // Add to json file
-                module = JsonConvert.DeserializeObject<Module>(json);
+                //module = JsonConvert.DeserializeObject<Module>(json);
                 module.data.Add(m);
                 string testy = JsonConvert.SerializeObject(module, Newtonsoft.Json.Formatting.Indented);
                 Debug.WriteLine(testy);
@@ -406,7 +478,7 @@ namespace desktopapp
                 File.WriteAllText("config.json", testy);
 
 
-                module = null; // send module to the void
+                //module = null; // send module to the void
 
 
                 InitializeModule(m, popup.pi);
@@ -485,12 +557,6 @@ namespace desktopapp
             minigrid.ColumnDefinitions.Add(c1);
             minigrid.ColumnDefinitions.Add(c2);
 
-            Button options = new Button
-            {
-                FontSize = 14,
-                Content = " + "
-            };
-
 
             TextBlock roomNum = new TextBlock
             {
@@ -503,19 +569,49 @@ namespace desktopapp
                 FontWeight = FontWeights.Bold
             };
 
-            minigrid.Children.Add(roomNum);
-            minigrid.Children.Add(options);
-            roomNum.SetValue(Grid.ColumnProperty, 0);
-            options.SetValue(Grid.ColumnProperty, 1);
 
-
-            // TODO: Exapand menu for extra options
+            // Module options
             Menu menu = new Menu();
-            MenuItem optionz = new MenuItem
+            MenuItem options = new MenuItem
             {
-                Header = " + "
+                Header = " + ",
+                FontSize = 14,
+                Background = foreGray
             };
+                MenuItem move = new MenuItem
+                {
+                    Header = "Move to"
+                };
+                MenuItem delete = new MenuItem
+                {
+                    Header = "Delete this module"
+                };
+                MenuItem reposition = new MenuItem
+                {
+                    Header = "Move module position"
+                };
+                MenuItem editRoom = new MenuItem
+                {
+                    Header = "Edit Room #"
+                };
+                MenuItem editName = new MenuItem
+                {
+                    Header = "Edit Name"
+                };
 
+
+            menu.Items.Add(options);
+                options.Items.Add(move);
+                options.Items.Add(delete);
+                options.Items.Add(reposition);
+                options.Items.Add(editRoom);
+                options.Items.Add(editName);
+
+
+            minigrid.Children.Add(roomNum);
+            minigrid.Children.Add(menu);
+            roomNum.SetValue(Grid.ColumnProperty, 0);
+            menu.SetValue(Grid.ColumnProperty, 1);
 
             Image imgtest = new Image
             {
@@ -562,7 +658,9 @@ namespace desktopapp
             // TODO: CHANGE THIS LATER WHEN DEALING WITH GROUPS
             // m.group blah blah
 
-            Default.Children.Add(newGroup);
+
+            groupMap[m.group].Children.Add(newGroup);
+            //Default.Children.Add(newGroup);
 
 
 
@@ -639,6 +737,17 @@ namespace desktopapp
                 enabled = true
             };
 
+            Button message = new Button();
+            message.ToolTip = new ToolTip { Content = "Cannot remove this until alarms are enabled" };
+
+            message.Content = DateTime.UtcNow.ToString("MM-dd-yyyy");
+            message.Content += " " + DateTime.Now.ToString("t");
+            message.Content += (" ALARMS DISABLED AT:  ");
+            // BEHOLD CRINGE
+            message.Content += roomNum.Text;
+            message.Background = Brushes.Blue;
+
+            // Disables alarm receiving and sends a message to pi
             disableBtn.Click += (o, ev) =>
             {
                 byte[] msg;
@@ -652,35 +761,43 @@ namespace desktopapp
                         sck.txt.Text = "Status: Normal";
                         sck.txt.Background = Brushes.ForestGreen;
                         disableBtn.Content = "Disable Alarms";
-                        if (sck.testSck != null)
+                        try
                         {
                             msg = Encoding.ASCII.GetBytes("ENABLE<EOF>");
                             sck.testSck.Send(msg);
                         }
-                        else
+                        catch (Exception exp)
                         {
                             Debug.WriteLine("Socket doesn't exist yet...");
                         }
+
+                        // Add disabled message to log as a reminder
+
+
+                        if (messagelog.Children.Contains(message)) messagelog.Children.Remove(message);
+
                     }
                     else
                     {
                         sck.txt.Text = "ALARMS DISABLED";
                         sck.txt.Background = Brushes.Blue;
                         disableBtn.Content = "Enable Alarms";
-                        if (sck.testSck != null)
+                        try
                         {
                             msg = Encoding.ASCII.GetBytes("DISABLE<EOF>");
                             sck.testSck.Send(msg);
                         }
-                        else
+                        catch (Exception exp)
                         {
                             Debug.WriteLine("Socket doesn't exist yet...");
                         }
+
+                        messagelog.Children.Add(message);
                     }
 
                 }
-            };
 
+            };
 
 
             // Now to add the target IP address to the map
@@ -700,7 +817,61 @@ namespace desktopapp
 
             // Settings button implementation
 
+            List<MenuItem> temp = new List<MenuItem>();
 
+            foreach (string grptmp in module.group)
+            {
+
+                MenuItem tmp = new MenuItem
+                {
+                    Header = grptmp
+                };
+
+                move.Items.Add(tmp);
+                temp.Add(tmp);
+
+                tmp.Click += (o, exv) =>
+                {
+                    WrapPanel oldwrp = groupMap[m.group];
+                    WrapPanel newwrp = groupMap[grptmp];
+                    oldwrp.Children.Remove(newGroup);
+                    newwrp.Children.Add(newGroup);
+
+
+                    m.group = grptmp;
+
+                    string testy = JsonConvert.SerializeObject(module, Newtonsoft.Json.Formatting.Indented);
+                    Debug.WriteLine(testy);
+
+
+                    File.WriteAllText("config.json", testy);
+
+
+                };
+            }
+
+
+            delete.Click += (o, v) =>
+            {
+                groupMap[m.group].Children.Remove(newGroup);
+                mjpegs.Remove(mjpeg);
+            };
+
+            reposition.Click += (o, v) =>
+            {
+
+            };
+
+
+            editRoom.Click += (o, v) =>
+            {
+
+            };
+
+            editName.Click += (o, v) =>
+            {
+
+            };
 
         }
 

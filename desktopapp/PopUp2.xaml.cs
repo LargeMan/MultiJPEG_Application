@@ -26,6 +26,9 @@ namespace desktopapp
         public PopUp2()
         {
             InitializeComponent();
+
+            grouplist.ItemsSource = MainWindow.module.group;
+            grouplist.SelectedIndex = 0;
         }
 
         string user = MainWindow.username;
@@ -41,6 +44,8 @@ namespace desktopapp
         public string roomNum { get; set; }
 
         public string personName { get; set; }
+
+        public string selectedGroup { get; set; }
 
         private void SubmitGroup(object sender, RoutedEventArgs e)
         {
@@ -75,6 +80,7 @@ namespace desktopapp
                 personName = nameInput.Text;
 
                 ipAddr = ipInput.Text;
+                selectedGroup = (string)grouplist.SelectedItem;
             }
             catch (Exception z)
             {
