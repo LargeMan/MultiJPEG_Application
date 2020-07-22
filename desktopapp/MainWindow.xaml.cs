@@ -452,6 +452,21 @@ namespace desktopapp
             expander.Content = newGroup;
             newGroup.Content = wrap;
             GroupWindow.Children.Add(expander);
+
+
+            Button btn = new Button
+            {
+                Content = name,
+                Background = Brushes.DarkGray,
+                Foreground = Brushes.White,
+            };
+            groupnamestodelete.Children.Add(btn);
+
+            btn.Click += (o, ev) =>
+            {
+                groupnamestodelete.Children.Remove(btn);
+                GroupWindow.Children.Remove(expander);
+            };
         }
 
 

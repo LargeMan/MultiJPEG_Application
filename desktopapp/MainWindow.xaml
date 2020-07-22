@@ -125,10 +125,11 @@
                     <MenuItem Header="_Add New Group" Background="#FF222222"
                               Click="CreateGroup"/>
 
-
+                    <MenuItem Header="_Delete Group" Background="#FF222222">
+                        <StackPanel x:Name="groupnamestodelete"/>
+                    </MenuItem>
                     <MenuItem Header="_Add New Camera" Background="#FF222222"
                               Click="CreateCam"/>
-
                     <MenuItem Header="_Show groups" Background="#FF222222"
                               IsCheckable="True"
                               IsChecked="True" />
